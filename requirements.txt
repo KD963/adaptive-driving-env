@@ -1,17 +1,5 @@
-# Gradio UI
-gradio==4.44.1
-
-# Hugging Face Hub for authentication & API
-huggingface_hub==0.17.4
-
-# OpenEnv environment package
-openenv==0.1.13
-
-# FastAPI for API backend
-fastapi==0.104.0
-uvicorn==0.23.2
-
-# Utilities
-python-dotenv==1.0.1
-pydantic==2.5.1
-numpy==1.26.0
+gradio[oauth]==4.44.1
+huggingface_hub>=0.16.4
+uvicorn>=0.14.0
+fastapi>=0.95.2
+websockets>=10.4
