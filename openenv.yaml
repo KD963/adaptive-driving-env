@@ -1,3 +1,6 @@
-sdk: gradio           
-python_version: "3.10"  
-app_file: "app.py"
+spec_version: 1
+name: adaptive_driving_env
+type: space
+runtime: fastapi
+app: server.app:app
+port: 8000
