@@ -3,10 +3,10 @@ title: "Adaptive Driving Environment"
 emoji: "🚗"
 colorFrom: "blue"
 colorTo: "green"
-sdk: "python"
-sdk_version: "0.2.3"
+sdk: "gradio"         
+sdk_version: "4.44.1" # Gradio version
 python_version: "3.10"
-app_file: "app.py"
+app_file: "server/app.py"    
 pinned: false
 ---
 
