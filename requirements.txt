@@ -1,7 +1,13 @@
-gradio==4.44.1
-huggingface_hub>=0.19.3
-uvicorn>=0.14.0
-websockets>=10.4
+# Core packages
 fastapi>=0.95.2
-numpy>=1.24.0
+uvicorn>=0.18.0
+websockets>=10.4
 python-dotenv>=1.0.0
+numpy>=1.24.0
+
+# Gradio UI
+gradio==4.44.1
+huggingface_hub==0.19.4
+
+# Spaces helper
+spaces
