@@ -43,7 +43,7 @@ def take_step(action):
         if env is None:
             raise ValueError("Environment not initialized. Click 'Reset' first.")
 
-        from .models import AdaptiveDrivingAction
+        from models import AdaptiveDrivingAction
         act = AdaptiveDrivingAction(move=action)
         obs = env.step(act)
         return format_obs(obs)
@@ -102,4 +102,4 @@ with gr.Blocks(title="Adaptive Driving Environment 🚗") as demo:
     step_btn.click(fn=take_step, inputs=[action_radio], outputs=outputs)
 
 if __name__ == "__main__":
-    demo.launch(debug=True)  # debug=True shows full errors in UI
+    demo.launch(server_name="0.0.0.0",server_port=7860,debug=True)  # debug=True shows full errors in UI
