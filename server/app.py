@@ -64,6 +64,18 @@ def health():
     return {"status": "ok"}
 
 
+@app.get("/", response_class=HTMLResponse)
+def home():
+    return """
+    <h1>🚗 Adaptive Driving Env</h1>
+    <p>API is running successfully ✅</p>
+    <ul>
+        <li><a href="/docs">Swagger Docs</a></li>
+        <li><a href="/schema">Schema</a></li>
+    </ul>
+    """
+
+
 @app.post("/reset", response_model=AdaptiveDrivingObservation)
 def reset(req: ResetRequest = ResetRequest()):
     env = get_env()
