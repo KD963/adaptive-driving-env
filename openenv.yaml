@@ -1,6 +1,6 @@
 spec_version: 1
 name: adaptive_driving_env
 type: space
-runtime: fastapi
+sdk: docker
 app: server.app:app
 port: 8000
