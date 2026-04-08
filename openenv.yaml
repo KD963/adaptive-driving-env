@@ -3,4 +3,4 @@ name: adaptive_driving_env
 type: space
 sdk: docker
 app: server.app:app
-port: 8000
+port: 7860
