@@ -1,6 +1,6 @@
 gradio==4.44.1
 fastapi
-uvicorn
+uvicorn[standard]
 pydantic
 python-dotenv
-openenv
+openai
