@@ -1,16 +1,7 @@
-# Gradio with OAuth support
-gradio[oauth]==4.44.1
-
-# Hugging Face Hub (compatible with Gradio 4.44.1)
-huggingface_hub==0.16.4
-
-# FastAPI server for OpenEnv
-fastapi>=0.95.2
+gradio==4.44.1
+huggingface_hub>=0.19.3
 uvicorn>=0.14.0
 websockets>=10.4
-
-# RL environment dependency
+fastapi>=0.95.2
 numpy>=1.24.0
-
-# Optional: if you use dotenv in inference.py
 python-dotenv>=1.0.0
