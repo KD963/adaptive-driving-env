@@ -102,4 +102,4 @@ with gr.Blocks(title="Adaptive Driving Environment 🚗") as demo:
     step_btn.click(fn=take_step, inputs=[action_radio], outputs=outputs)
 
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(share=True)
