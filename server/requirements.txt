@@ -4,5 +4,6 @@ uvicorn>=0.24.0
 gradio
 openai
 python-dotenv
+openenv-core
 
 

@@ -43,7 +43,7 @@ def take_step(action):
         if env is None:
             raise ValueError("Environment not initialized. Click 'Reset' first.")
 
-        from models import AdaptiveDrivingAction
+        from .models import AdaptiveDrivingAction
         act = AdaptiveDrivingAction(move=action)
         obs = env.step(act)
         return format_obs(obs)
