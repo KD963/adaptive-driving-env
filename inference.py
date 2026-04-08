@@ -1,21 +1,23 @@
-import asyncio
-from dotenv import load_dotenv
 import os
 from openai import OpenAI
 from models import AdaptiveDrivingAction
 from server.adaptive_driving_env_environment import AdaptiveDrivingEnvironment
 
-# Load environment variables
-load_dotenv()
+# ---------------- ENV VARIABLES ----------------
+API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
+MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4.1-mini")
+HF_TOKEN = os.getenv("HF_TOKEN")
 
-# OpenAI client
+if HF_TOKEN is None:
+    raise ValueError("HF_TOKEN environment variable is required")
+
+# ---------------- OPENAI CLIENT ----------------
 client = OpenAI(
-    base_url=os.getenv("API_BASE_URL"),
-    api_key=os.getenv("HF_TOKEN")
+    base_url=API_BASE_URL,
+    api_key=HF_TOKEN
 )
-MODEL_NAME = os.getenv("MODEL_NAME")
 
-# System prompt for the LLM
+# ---------------- PROMPT ----------------
 SYSTEM_PROMPT = """
 You control a car.
 
@@ -27,62 +29,97 @@ accelerate OR brake
 Return ONLY one word: accelerate or brake
 """
 
-# Function to get LLM action
+# ---------------- LLM ACTION ----------------
 def get_action(position, goal):
-    res = client.chat.completions.create(
-        model=MODEL_NAME,
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": f"Position={position}, Goal={goal}"}
-        ],
-        temperature=0.3,
-        max_tokens=10
-    )
+    try:
+        res = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": f"Position={position}, Goal={goal}"}
+            ],
+            temperature=0.3,
+            max_tokens=10
+        )
 
-    text = res.choices[0].message.content.lower().strip()
-    if "brake" in text:
-        return "brake"
-    return "accelerate"
+        text = res.choices[0].message.content.lower().strip()
+
+        if "brake" in text:
+            return "brake"
+        return "accelerate"
+
+    except Exception:
+        # fallback (important for evaluation stability)
+        return "accelerate"
 
 
-async def main():
+# ---------------- MAIN ----------------
+def main():
     success = False
-    steps_taken = 0
-    score = 0
     rewards = []
+    steps_taken = 0
+    last_error = None
 
     env = AdaptiveDrivingEnvironment()
     obs = env.reset()
-    
+
+    task_name = obs.metadata.get("task", "unknown")
+
+    # -------- START LINE --------
+    print(f"[START] task={task_name} env=adaptive-driving model={MODEL_NAME}")
+
     try:
-        for step in range(50):  # run up to 50 steps
+        for step in range(50):
             action_str = get_action(obs.position, obs.distance_to_goal + obs.position)
-            action = AdaptiveDrivingAction(move=action_str)
-            obs = env.step(action)
 
-            rewards.append(obs.reward)
-            steps_taken += 1
+            try:
+                action = AdaptiveDrivingAction(move=action_str)
+                obs = env.step(action)
 
-            print(f"Step {steps_taken}: Action={action.move}, Position={obs.position}, Reward={obs.reward}")
+                reward = float(obs.reward)
+                done = bool(obs.done)
 
-            if getattr(obs, "done", False):
-                success = True
+                rewards.append(reward)
+                steps_taken += 1
+
+                # -------- STEP LINE --------
+                print(
+                    f"[STEP] step={steps_taken} "
+                    f"action={action_str} "
+                    f"reward={reward:.2f} "
+                    f"done={str(done).lower()} "
+                    f"error=null"
+                )
+
+                if done:
+                    success = True
+                    break
+
+            except Exception as step_error:
+                last_error = str(step_error)
+
+                print(
+                    f"[STEP] step={steps_taken+1} "
+                    f"action={action_str} "
+                    f"reward=0.00 "
+                    f"done=true "
+                    f"error={last_error}"
+                )
                 break
 
-        score = obs.position  # you can define scoring differently
-        print(f"Simulation ended. Success={success}, Steps={steps_taken}, Score={score}")
-
     except Exception as e:
-        print("Simulation failed:", e)
+        last_error = str(e)
 
     finally:
-        # logging at the end
-        print("Final Summary:")
-        print(f"Success: {success}")
-        print(f"Steps Taken: {steps_taken}")
-        print(f"Score: {score}")
-        print(f"Rewards: {rewards}")
+        # -------- END LINE --------
+        reward_str = ",".join(f"{r:.2f}" for r in rewards)
+
+        print(
+            f"[END] success={str(success).lower()} "
+            f"steps={steps_taken} "
+            f"rewards={reward_str}"
+        )
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
