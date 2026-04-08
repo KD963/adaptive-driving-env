@@ -1,7 +1,6 @@
-openenv
+gradio==4.44.1
 fastapi
 uvicorn
 pydantic
-gradio
-openai
 python-dotenv
+openenv-core
