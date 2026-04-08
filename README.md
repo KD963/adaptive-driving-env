@@ -1,3 +1,15 @@
+---
+title: "Adaptive Driving AI"
+emoji: "🚗"
+colorFrom: "blue"
+colorTo: "green"
+sdk: "gradio"
+sdk_version: "4.0.0"
+python_version: "3.10"
+app_file: "app.py"
+pinned: false
+---
+
 # 🚗 Adaptive Driving AI Environment
 
 An AI-powered driving simulation where an LLM controls a car to reach a goal under constraints like:
