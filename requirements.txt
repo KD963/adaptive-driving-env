@@ -1,6 +1,17 @@
+# Gradio UI
 gradio==4.44.1
-fastapi
-uvicorn[standard]
-pydantic
-python-dotenv
-openai
+
+# Hugging Face Hub for authentication & API
+huggingface_hub==0.17.4
+
+# OpenEnv environment package
+openenv==0.1.13
+
+# FastAPI for API backend
+fastapi==0.104.0
+uvicorn==0.23.2
+
+# Utilities
+python-dotenv==1.0.1
+pydantic==2.5.1
+numpy==1.26.0
