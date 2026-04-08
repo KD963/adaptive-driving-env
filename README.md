@@ -1,10 +1,10 @@
 ---
-title: "Adaptive Driving AI"
+title: "Adaptive Driving Environment"
 emoji: "🚗"
 colorFrom: "blue"
 colorTo: "green"
-sdk: "gradio"
-sdk_version: "4.0.0"
+sdk: "python"
+sdk_version: "0.2.3"
 python_version: "3.10"
 app_file: "app.py"
 pinned: false
