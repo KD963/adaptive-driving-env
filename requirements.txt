@@ -4,7 +4,7 @@ uvicorn
 python-dotenv
 openenv-core
 openenv
-
-# Gradio UI
-gradio
-
+openai
+pydantic
+gradio==4.29.0
+huggingface_hub==0.20.3
