@@ -8,3 +8,4 @@ openai
 pydantic
 gradio==4.29.0
 huggingface_hub==0.20.3
+spaces
