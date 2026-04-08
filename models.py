@@ -1,16 +1,15 @@
-from openenv.core.env_server.types import Action, Observation
-from pydantic import Field
+from pydantic import BaseModel, Field
 from typing import Optional, Dict
 
 
-class AdaptiveDrivingAction(Action):
+class AdaptiveDrivingAction(BaseModel):
     move: str = Field(
         ...,
         description="Action: 'accelerate' or 'brake'"
     )
 
 
-class AdaptiveDrivingObservation(Observation):
+class AdaptiveDrivingObservation(BaseModel):
     position: float
     speed: float
     battery: float

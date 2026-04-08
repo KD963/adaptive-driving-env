@@ -2,7 +2,7 @@ import random
 from typing import Optional
 
 
-from models import AdaptiveDrivingAction, AdaptiveDrivingObservation
+from ..models import AdaptiveDrivingAction, AdaptiveDrivingObservation
 from tasks import TASKS
 
 
