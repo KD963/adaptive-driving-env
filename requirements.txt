@@ -1,8 +1,5 @@
 openenv-core>=0.1.0
 openai
 pydantic
-gradio==4.29.0
-huggingface_hub==0.20.3
-uvicorn>=0.14.0
-websockets>=10.4
-spaces==0.14.0
+gradio==4.44.1
+
