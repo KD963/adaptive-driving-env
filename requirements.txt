@@ -1,13 +1,10 @@
 # Core packages
-fastapi>=0.95.2
-uvicorn>=0.18.0
-websockets>=10.4
-python-dotenv>=1.0.0
-numpy>=1.24.0
+fastapi
+uvicorn
+python-dotenv
+openenv-core
+openenv
 
 # Gradio UI
-gradio==4.44.1
-huggingface_hub==0.19.4
+gradio
 
-# Spaces helper
-spaces
