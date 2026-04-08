@@ -1,14 +1,12 @@
 import random
 from typing import Optional
 
-from openenv.core.env_server.interfaces import Environment
-from openenv.core.env_server.types import State
 
 from models import AdaptiveDrivingAction, AdaptiveDrivingObservation
 from tasks import TASKS
 
 
-class AdaptiveDrivingEnvironment(Environment):
+class AdaptiveDrivingEnvironment:
     """
     Real-world Adaptive Driving Environment
 
@@ -141,10 +139,10 @@ class AdaptiveDrivingEnvironment(Environment):
             },
         )
 
-    # ---------------- STATE ----------------
-    @property
-    def state(self) -> State:
-        return State(
-            episode_id=self.episode_id,
-            step_count=self.step_count,
-        )
+    # # ---------------- STATE ----------------
+    # @property
+    # def state(self) -> State:
+    #     return State(
+    #         episode_id=self.episode_id,
+    #         step_count=self.step_count,
+    #     )
