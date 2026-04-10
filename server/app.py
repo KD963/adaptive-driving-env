@@ -59,6 +59,30 @@ class StepResponse(BaseModel):
 
 # ── Endpoints ─────────────────────────────────────────────────
 
+@app.get("/run")
+def run_inference():
+    try:
+        import sys
+        import io
+
+        # Capture stdout
+        old_stdout = sys.stdout
+        sys.stdout = buffer = io.StringIO()
+
+        # Import and run inference
+        from inference import main
+        main()
+
+        # Restore stdout
+        sys.stdout = old_stdout
+
+        output = buffer.getvalue()
+
+        return {"output": output}
+
+    except Exception as e:
+        return {"error": str(e)}
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
