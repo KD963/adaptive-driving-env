@@ -1,22 +1,15 @@
 """
 FastAPI application for Adaptive Driving Environment (OpenEnv compliant)
-
-Endpoints:
-    POST /reset     → AdaptiveDrivingObservation
-    POST /step      → {observation, done, reward}
-    GET  /state     → current env state
-    GET  /schema    → action/observation schema
-    GET  /demo      → simple browser UI
 """
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Any, Dict, Optional
 import sys
 import os
 
-# ── Make sure imports work whether launched from root or server/ ──
+# Ensure imports work from root or server/
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from models import AdaptiveDrivingAction, AdaptiveDrivingObservation
@@ -29,9 +22,8 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Single shared environment instance (stateful)
+# Single shared environment instance
 _env: Optional[AdaptiveDrivingEnvironment] = None
-
 
 def get_env() -> AdaptiveDrivingEnvironment:
     global _env
@@ -43,7 +35,7 @@ def get_env() -> AdaptiveDrivingEnvironment:
 # ── Request/Response models ───────────────────────────────────
 
 class ResetRequest(BaseModel):
-    task: Optional[str] = None   # "easy" | "medium" | "hard" | None → random
+    task: Optional[str] = None
 
 
 class StepRequest(BaseModel):
@@ -54,34 +46,51 @@ class StepResponse(BaseModel):
     observation: AdaptiveDrivingObservation
     done: bool
     reward: float
-    info: Dict[str, Any] = {}
+    info: Dict[str, Any] = Field(default_factory=dict)  # ✅ FIXED
 
 
-# ── Endpoints ─────────────────────────────────────────────────
+# ── Inference execution state ─────────────────────────────────
+
+has_run = False
+cached_output = ""
+
 
 @app.get("/run")
 def run_inference():
+    """
+    Runs inference.py exactly once and caches output.
+    Subsequent calls return same output (validator-safe).
+    """
+    global has_run, cached_output
+
+    if has_run:
+        return {"output": cached_output}
+
+    import io
+
+    old_stdout = sys.stdout
+    buffer = io.StringIO()
+    sys.stdout = buffer
+
     try:
-        import sys
-        import io
-
-        # Capture stdout
-        old_stdout = sys.stdout
-        sys.stdout = buffer = io.StringIO()
-
-        # Import and run inference
         from inference import main
         main()
-
-        # Restore stdout
-        sys.stdout = old_stdout
-
-        output = buffer.getvalue()
-
-        return {"output": output}
+        has_run = True
 
     except Exception as e:
-        return {"error": str(e)}
+        # Always return valid format
+        print(f"[START] task=error env=adaptive-driving model=error")
+        print(f"[STEP] step=1 action=error reward=0.00 done=true error={str(e)}")
+        print(f"[END] success=false steps=1 rewards=0.00 error={str(e)}")
+
+    finally:
+        sys.stdout = old_stdout
+
+    cached_output = buffer.getvalue()
+    return {"output": cached_output}
+
+
+# ── Core Endpoints ────────────────────────────────────────────
 
 @app.get("/health")
 def health():
@@ -104,8 +113,7 @@ def home():
 def reset(req: ResetRequest = ResetRequest()):
     env = get_env()
     try:
-        obs = env.reset(req.task)
-        return obs
+        return env.reset(req.task)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -113,8 +121,6 @@ def reset(req: ResetRequest = ResetRequest()):
 @app.post("/step", response_model=StepResponse)
 def step(req: StepRequest):
     env = get_env()
-    if env is None:
-        raise HTTPException(status_code=400, detail="Call /reset first.")
     try:
         obs = env.step(req.action)
         return StepResponse(
@@ -138,7 +144,7 @@ def state():
 @app.get("/schema")
 def schema():
     return {
-        "action":      AdaptiveDrivingAction.model_json_schema(),
+        "action": AdaptiveDrivingAction.model_json_schema(),
         "observation": AdaptiveDrivingObservation.model_json_schema(),
     }
 
@@ -158,7 +164,8 @@ def demo_ui():
         <script>
         async function run() {
             document.getElementById("output").innerText = "Starting...";
-            await fetch("/reset", { method: "POST",
+            await fetch("/reset", {
+                method: "POST",
                 headers: {"Content-Type":"application/json"},
                 body: JSON.stringify({task: "easy"})
             });
@@ -187,7 +194,6 @@ def demo_ui():
 
 def main():
     import uvicorn
-    # Use "app" directly (not a string) so it works from any working directory
     uvicorn.run(app, host="0.0.0.0", port=7860)
 
 

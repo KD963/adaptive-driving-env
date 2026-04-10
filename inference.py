@@ -35,7 +35,6 @@ Return ONLY one word: accelerate or brake
 def get_action(position, goal, speed, battery):
     distance = goal - position
 
-    # fallback (VERY IMPORTANT for stability)
     def fallback():
         return "brake" if abs(distance) < 5 else "accelerate"
 
@@ -54,13 +53,9 @@ def get_action(position, goal, speed, battery):
         )
 
         text = response.choices[0].message.content.lower().strip()
-
-        if "brake" in text:
-            return "brake"
-        return "accelerate"
+        return "brake" if "brake" in text else "accelerate"
 
     except Exception:
-        # NEVER fail → always fallback
         return fallback()
 
 
@@ -71,14 +66,17 @@ def main():
     steps = 0
     last_error = None
 
+    started = False  # ✅ ensure only one START
+
     try:
         env = AdaptiveDrivingEnvironment()
         obs: AdaptiveDrivingObservation = env.reset()
 
         task_name = obs.metadata.get("task", "unknown") if obs.metadata else "unknown"
 
-        # ✅ START
+        # ✅ START (only once)
         print(f"[START] task={task_name} env=adaptive-driving model={MODEL_NAME}")
+        started = True
 
         for step_num in range(1, 51):
             try:
@@ -124,16 +122,21 @@ def main():
 
     except Exception as e:
         last_error = str(e)
-        print(f"[START] task=unknown env=adaptive-driving model={MODEL_NAME}")
+
+        # ✅ START only if never printed before
+        if not started:
+            print(f"[START] task=unknown env=adaptive-driving model={MODEL_NAME}")
 
     finally:
         reward_str = ",".join(f"{r:.2f}" for r in rewards)
+        error_str = last_error if last_error else "null"
 
-        # ✅ END (MANDATORY)
+        # ✅ END (strict format)
         print(
             f"[END] success={str(success).lower()} "
             f"steps={steps} "
-            f"rewards={reward_str}"
+            f"rewards={reward_str} "
+            f"error={error_str}"
         )
 
 
