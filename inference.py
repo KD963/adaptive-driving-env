@@ -129,14 +129,12 @@ def main():
 
     finally:
         reward_str = ",".join(f"{r:.2f}" for r in rewards)
-        error_str = last_error if last_error else "null"
 
         # ✅ END (strict format)
         print(
             f"[END] success={str(success).lower()} "
             f"steps={steps} "
             f"rewards={reward_str} "
-            f"error={error_str}"
         )
 
 
