@@ -16,13 +16,12 @@ def grade_easy(obs):
     goal     = float(_get(obs, "goal", 50.0))
 
     progress = position / goal if goal > 0 else 0.0
-
-    # SHIFTED SCALE (IMPORTANT)
     score = 0.05 + 0.9 * progress
 
     if position >= goal:
         score = 0.95
 
+    # 🚨 FINAL GUARD (MANDATORY)
     return clamp(score)
 
 
@@ -40,16 +39,15 @@ def grade_medium(obs):
     if speed > 10:
         penalty += 0.2
 
-    raw = max(0.0, progress - penalty)
+    raw = progress - penalty
 
-    # SHIFTED SCALE
-    score = 0.05 + 0.9 * raw
+    # 🚨 CRITICAL FIX: avoid 0
+    score = 0.05 + 0.9 * max(0.01, raw)
 
     if position >= goal:
         score = 0.9 - penalty
 
     return clamp(score)
-
 
 def grade_hard(obs):
     position = float(_get(obs, "position", 0.0))
@@ -61,14 +59,12 @@ def grade_hard(obs):
 
     combined = 0.7 * progress + 0.3 * battery_factor
 
-    # SHIFTED SCALE
     score = 0.05 + 0.9 * combined
 
     if position >= goal and battery > 0:
         score = 0.9 + 0.05 * battery_factor
 
     return clamp(score)
-
 
 # ─────────────────────────────────────────────────────────────
 
@@ -83,4 +79,13 @@ def grade(task_id: str, obs):
     fn = GRADERS.get(task_id)
     if not fn:
         raise ValueError(f"Invalid task_id: {task_id}")
-    return fn(obs)
+
+    score = fn(obs)
+
+    # 🚨 FINAL VALIDATOR GUARD
+    if score <= 0.0:
+        score = 0.02
+    elif score >= 1.0:
+        score = 0.98
+
+    return score
