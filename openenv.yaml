@@ -6,9 +6,23 @@ app: server.app:app
 port: 7860
 
 tasks:
-  - name: easy
+  - id: easy
+    name: "Easy Drive"
+    description: "Reach the target position on a flat road."
+    difficulty: easy
     grader: grader.grade_easy
-  - name: medium
+    score_range: [0.01, 0.99]
+ 
+  - id: medium
+    name: "Medium Drive"
+    description: "Reach target while managing speed and visibility constraints."
+    difficulty: medium
     grader: grader.grade_medium
-  - name: hard
+    score_range: [0.01, 0.99]
+ 
+  - id: hard
+    name: "Hard Drive"
+    description: "Reach target with maximum battery efficiency."
+    difficulty: hard
     grader: grader.grade_hard
+    score_range: [0.01, 0.99]
