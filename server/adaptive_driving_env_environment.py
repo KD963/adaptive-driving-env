@@ -111,6 +111,8 @@ class AdaptiveDrivingEnvironment:
         return {"clear": 1.0, "rain": 0.6, "heat": 0.9}.get(self._weather, 1.0)
 
     def _make_obs(self, reward: float) -> AdaptiveDrivingObservation:
+        safe_reward = max(0.02, min(round(float(reward), 4), 0.98))
+
         return AdaptiveDrivingObservation(
             position         = round(self._position, 4),
             speed            = round(self._speed, 4),
@@ -121,7 +123,7 @@ class AdaptiveDrivingEnvironment:
             traction         = self._traction,
             distance_to_goal = round(max(0.0, self._goal - self._position), 4),
             goal             = self._goal,
-            reward           = round(float(reward), 4),
+            reward           = safe_reward,   # ✅ enforced
             done             = self._done,
             metadata         = {"task": self._task_id, "step": self._step},
-        )
+    )

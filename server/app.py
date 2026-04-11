@@ -109,11 +109,16 @@ def home():
     """
 
 
-@app.post("/reset", response_model=AdaptiveDrivingObservation)
+@app.post("/reset", response_model=StepResponse)
 def reset(req: ResetRequest = ResetRequest()):
     env = get_env()
     try:
-        return env.reset(req.task)
+        obs = env.reset(req.task)
+        return StepResponse(
+            observation=obs,
+            done=obs.done,
+            reward=obs.reward,
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
