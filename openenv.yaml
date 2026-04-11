@@ -4,3 +4,11 @@ type: space
 sdk: docker
 app: server.app:app
 port: 7860
+
+tasks:
+  - name: easy
+    grader: grader.grade_easy
+  - name: medium
+    grader: grader.grade_medium
+  - name: hard
+    grader: grader.grade_hard
