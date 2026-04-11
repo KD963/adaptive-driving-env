@@ -79,7 +79,7 @@ def grade(task_id: str, obs):
     if not fn:
         raise ValueError(f"Invalid task_id: {task_id}")
 
-    score = fn(obs)
+    score = fn(None, obs)   # ✅ FIXED
 
     # 🚨 FINAL VALIDATOR GUARD
     if score <= 0.0:

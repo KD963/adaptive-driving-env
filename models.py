@@ -34,7 +34,5 @@ class AdaptiveDrivingObservation(BaseModel):
     metadata: Optional[Dict] = None
 
     def model_post_init(self, __context):
-        """Auto-compute goal if not explicitly provided."""
-        if self.goal == 0.0 and self.distance_to_goal != 0.0:
-            # Use object.__setattr__ because Pydantic models are frozen-ish
+        if self.goal is None or self.goal <= 0:
             object.__setattr__(self, "goal", self.position + self.distance_to_goal)

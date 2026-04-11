@@ -7,7 +7,7 @@ from grader import grade
 class AdaptiveDrivingEnvironment:
 
     def __init__(self):
-        self._task_id = "easy"
+        self._task_id = None
         self._reset_state()
 
     def _reset_state(self):
