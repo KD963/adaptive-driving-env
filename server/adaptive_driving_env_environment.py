@@ -44,13 +44,13 @@ class AdaptiveDrivingEnvironment:
         self._step       = 0
         self._done       = False
 
-        return self._make_obs(reward=0.01)   # initial reward > 0 (never 0.0)
+        return self._make_obs(reward=0.05)   # initial reward > 0 (never 0.0)
 
     # ── step ─────────────────────────────────────────────────────────────────
 
     def step(self, action: AdaptiveDrivingAction) -> AdaptiveDrivingObservation:
         if self._done:
-            return self._make_obs(reward=0.01)
+            return self._make_obs(reward=0.05)
 
         self._step += 1
         move = action.move.lower().strip()

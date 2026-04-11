@@ -32,8 +32,8 @@ _TASK_GOALS = {
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def clamp(score: float) -> float:
-    """Return score strictly inside (0.01, 0.99)."""
-    return max(0.01, min(round(float(score), 4), 0.99))
+    score = round(float(score), 4)
+    return max(0.02, min(score, 0.98))
 
 
 def _get(obs, key: str, default=0.0):
@@ -71,8 +71,8 @@ class EasyDriveRubric(_Base):
         position = float(_get(observation, "position", 0.0))
         goal     = _resolve_goal(observation, "easy")
         if position >= goal:
-            return 0.99
-        return clamp(position / goal if goal > 0 else 0.01)
+            return 0.98
+        return clamp(position / goal if goal > 0 else 0.02)
 
 
 class MediumDriveRubric(_Base):
@@ -91,10 +91,10 @@ class MediumDriveRubric(_Base):
             penalty += 0.2
 
         if position >= goal:
-            return clamp(0.99 - penalty)
+            return clamp(0.98 - penalty)
 
         progress = position / goal if goal > 0 else 0.0
-        return clamp(progress - penalty)
+        return clamp(max(0.0, progress - penalty))
 
 
 class HardDriveRubric(_Base):
@@ -108,7 +108,7 @@ class HardDriveRubric(_Base):
         battery_factor = max(0.0, min(battery / 100.0, 1.0))
 
         if position >= goal and battery > 0:
-            return clamp(0.85 + battery_factor * 0.14)
+            return clamp(0.85 + battery_factor * 0.13)
 
         progress = position / goal if goal > 0 else 0.0
         return clamp(progress * 0.7 + battery_factor * 0.3)
