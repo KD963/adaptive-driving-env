@@ -8,21 +8,21 @@ port: 7860
 tasks:
   - id: easy
     name: "Easy Drive"
-    description: "Reach the target position on a flat road."
+    description: "Reach the target position on a flat road in clear weather."
     difficulty: easy
     grader: grader.grade_easy
     score_range: [0.01, 0.99]
- 
+
   - id: medium
     name: "Medium Drive"
-    description: "Reach target while managing speed and visibility constraints."
+    description: "Reach target while managing speed and visibility in rain."
     difficulty: medium
     grader: grader.grade_medium
     score_range: [0.01, 0.99]
- 
+
   - id: hard
     name: "Hard Drive"
-    description: "Reach target with maximum battery efficiency."
+    description: "Reach target with maximum battery efficiency in heat."
     difficulty: hard
     grader: grader.grade_hard
     score_range: [0.01, 0.99]
