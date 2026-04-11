@@ -22,8 +22,6 @@ class AdaptiveDrivingEnvironment:
         self._step = 0
         self._done = False
 
-    # ─────────────────────────────────────────
-
     def reset(self, task_id: str = None):
         if task_id not in TASKS:
             task_id = random.choice(list(TASKS.keys()))
@@ -42,8 +40,6 @@ class AdaptiveDrivingEnvironment:
         self._traction = self._compute_traction()
 
         return self._make_obs(0.05)
-
-    # ─────────────────────────────────────────
 
     def step(self, action: AdaptiveDrivingAction):
         if self._done:
@@ -81,8 +77,6 @@ class AdaptiveDrivingEnvironment:
         reward = grade(self._task_id, obs_snapshot)
 
         return self._make_obs(reward)
-
-    # ─────────────────────────────────────────
 
     def _compute_visibility(self):
         return {"clear": 1.0, "rain": 0.5, "heat": 0.8}.get(self._weather, 1.0)

@@ -11,9 +11,9 @@ def _get(obs, key, default=0.0):
 
 # ─────────────────────────────────────────────────────────────
 
-def grade_easy(obs):
-    position = float(_get(obs, "position", 0.0))
-    goal     = float(_get(obs, "goal", 50.0))
+def grade_easy(action, observation):
+    position = float(_get(observation, "position", 0.0))
+    goal     = float(_get(observation, "goal", 50.0))
 
     progress = position / goal if goal > 0 else 0.0
     score = 0.05 + 0.9 * progress
@@ -21,15 +21,14 @@ def grade_easy(obs):
     if position >= goal:
         score = 0.95
 
-    # 🚨 FINAL GUARD (MANDATORY)
     return clamp(score)
 
 
-def grade_medium(obs):
-    position   = float(_get(obs, "position", 0.0))
-    speed      = float(_get(obs, "speed", 0.0))
-    visibility = float(_get(obs, "visibility", 1.0))
-    goal       = float(_get(obs, "goal", 70.0))
+def grade_medium(action, observation):
+    position   = float(_get(observation, "position", 0.0))
+    speed      = float(_get(observation, "speed", 0.0))
+    visibility = float(_get(observation, "visibility", 1.0))
+    goal       = float(_get(observation, "goal", 70.0))
 
     progress = position / goal if goal > 0 else 0.0
 
@@ -40,8 +39,6 @@ def grade_medium(obs):
         penalty += 0.2
 
     raw = progress - penalty
-
-    # 🚨 CRITICAL FIX: avoid 0
     score = 0.05 + 0.9 * max(0.01, raw)
 
     if position >= goal:
@@ -49,16 +46,16 @@ def grade_medium(obs):
 
     return clamp(score)
 
-def grade_hard(obs):
-    position = float(_get(obs, "position", 0.0))
-    battery  = float(_get(obs, "battery", 0.0))
-    goal     = float(_get(obs, "goal", 100.0))
+
+def grade_hard(action, observation):
+    position = float(_get(observation, "position", 0.0))
+    battery  = float(_get(observation, "battery", 0.0))
+    goal     = float(_get(observation, "goal", 100.0))
 
     progress = position / goal if goal > 0 else 0.0
     battery_factor = max(0.0, min(battery / 100.0, 1.0))
 
     combined = 0.7 * progress + 0.3 * battery_factor
-
     score = 0.05 + 0.9 * combined
 
     if position >= goal and battery > 0:
@@ -66,7 +63,9 @@ def grade_hard(obs):
 
     return clamp(score)
 
-# ─────────────────────────────────────────────────────────────
+
+# ─────────────────────────────────────────────
+
 
 GRADERS = {
     "easy": grade_easy,
