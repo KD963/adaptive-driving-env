@@ -1,155 +1,86 @@
-"""
-Graders for Adaptive Driving Environment.
-
-Implements the OpenEnv Rubric interface:
-    rubric = EasyDriveRubric()
-    score = rubric(action, observation)   # calls forward()
-
-Each forward() returns a float STRICTLY in (0.01, 0.99).
-"""
-
-# ── Try to use OpenEnv Rubric base class, fall back to plain ABC ──────────────
-try:
-    from openenv.core.rubrics import Rubric as _Base
-except ImportError:
-    from abc import ABC, abstractmethod
-    class _Base(ABC):
-        @abstractmethod
-        def forward(self, action, observation) -> float:
-            pass
-        def __call__(self, action, observation) -> float:
-            return self.forward(action, observation)
-
-
-# ── Task goal positions ───────────────────────────────────────────────────────
-_TASK_GOALS = {
-    "easy":   50.0,
-    "medium": 70.0,
-    "hard":  100.0,
-}
-
-
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
 def clamp(score: float) -> float:
-    score = round(float(score), 4)
-    return max(0.02, min(score, 0.98))
+    score = float(score)
+    return max(0.02, min(round(score, 4), 0.98))
 
 
-def _get(obs, key: str, default=0.0):
-    """Fetch a field from a dict or object attribute."""
+def _get(obs, key, default=0.0):
     if isinstance(obs, dict):
         return obs.get(key, default)
     return getattr(obs, key, default)
 
 
-def _resolve_goal(obs, task_id: str) -> float:
-    goal = _get(obs, "goal", None)
-    if goal is not None:
-        try:
-            g = float(goal)
-            if g > 0:
-                return g
-        except (TypeError, ValueError):
-            pass
+# ─────────────────────────────────────────────────────────────
+
+def grade_easy(obs):
     position = float(_get(obs, "position", 0.0))
-    dtg = _get(obs, "distance_to_goal", None)
-    if dtg is not None:
-        try:
-            return position + float(dtg)
-        except (TypeError, ValueError):
-            pass
-    return _TASK_GOALS.get(task_id, 50.0)
+    goal     = float(_get(obs, "goal", 50.0))
+
+    progress = position / goal if goal > 0 else 0.0
+
+    # SHIFTED SCALE (IMPORTANT)
+    score = 0.05 + 0.9 * progress
+
+    if position >= goal:
+        score = 0.95
+
+    return clamp(score)
 
 
-# ── Rubric classes (OpenEnv Rubric interface) ─────────────────────────────────
+def grade_medium(obs):
+    position   = float(_get(obs, "position", 0.0))
+    speed      = float(_get(obs, "speed", 0.0))
+    visibility = float(_get(obs, "visibility", 1.0))
+    goal       = float(_get(obs, "goal", 70.0))
 
-class EasyDriveRubric(_Base):
-    """Score = position / goal. Reaching goal → 0.99."""
+    progress = position / goal if goal > 0 else 0.0
 
-    def forward(self, action, observation) -> float:
-        position = float(_get(observation, "position", 0.0))
-        goal     = _resolve_goal(observation, "easy")
-        if position >= goal:
-            return 0.98
-        return clamp(position / goal if goal > 0 else 0.02)
+    penalty = 0.0
+    if visibility < 0.6:
+        penalty += 0.2
+    if speed > 10:
+        penalty += 0.2
 
+    raw = max(0.0, progress - penalty)
 
-class MediumDriveRubric(_Base):
-    """Score = progress − safety penalties (visibility, speed)."""
+    # SHIFTED SCALE
+    score = 0.05 + 0.9 * raw
 
-    def forward(self, action, observation) -> float:
-        position   = float(_get(observation, "position",   0.0))
-        speed      = float(_get(observation, "speed",      0.0))
-        visibility = float(_get(observation, "visibility", 1.0))
-        goal       = _resolve_goal(observation, "medium")
+    if position >= goal:
+        score = 0.9 - penalty
 
-        penalty = 0.0
-        if visibility < 0.6:
-            penalty += 0.2
-        if speed > 10:
-            penalty += 0.2
-
-        if position >= goal:
-            return clamp(0.98 - penalty)
-
-        progress = position / goal if goal > 0 else 0.0
-        return clamp(max(0.0, progress - penalty))
+    return clamp(score)
 
 
-class HardDriveRubric(_Base):
-    """Score = 70% progress + 30% battery efficiency."""
+def grade_hard(obs):
+    position = float(_get(obs, "position", 0.0))
+    battery  = float(_get(obs, "battery", 0.0))
+    goal     = float(_get(obs, "goal", 100.0))
 
-    def forward(self, action, observation) -> float:
-        position = float(_get(observation, "position", 0.0))
-        battery  = float(_get(observation, "battery",  0.0))
-        goal     = _resolve_goal(observation, "hard")
+    progress = position / goal if goal > 0 else 0.0
+    battery_factor = max(0.0, min(battery / 100.0, 1.0))
 
-        battery_factor = max(0.0, min(battery / 100.0, 1.0))
+    combined = 0.7 * progress + 0.3 * battery_factor
 
-        if position >= goal and battery > 0:
-            return clamp(0.85 + battery_factor * 0.13)
+    # SHIFTED SCALE
+    score = 0.05 + 0.9 * combined
 
-        progress = position / goal if goal > 0 else 0.0
-        return clamp(progress * 0.7 + battery_factor * 0.3)
+    if position >= goal and battery > 0:
+        score = 0.9 + 0.05 * battery_factor
 
-
-# ── Plain function aliases (for openenv.yaml grader: field) ──────────────────
-
-_easy_rubric   = EasyDriveRubric()
-_medium_rubric = MediumDriveRubric()
-_hard_rubric   = HardDriveRubric()
+    return clamp(score)
 
 
-def grade_easy(observation) -> float:
-    return _easy_rubric.forward(None, observation)
-
-
-def grade_medium(observation) -> float:
-    return _medium_rubric.forward(None, observation)
-
-
-def grade_hard(observation) -> float:
-    return _hard_rubric.forward(None, observation)
-
-
-# ── Registry ──────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 
 GRADERS = {
-    "easy":   grade_easy,
+    "easy": grade_easy,
     "medium": grade_medium,
-    "hard":   grade_hard,
-}
-
-RUBRICS = {
-    "easy":   _easy_rubric,
-    "medium": _medium_rubric,
-    "hard":   _hard_rubric,
+    "hard": grade_hard,
 }
 
 
-def grade(task_id: str, observation) -> float:
+def grade(task_id: str, obs):
     fn = GRADERS.get(task_id)
-    if fn is None:
-        raise ValueError(f"Unknown task_id: {task_id!r}. Valid: {list(GRADERS)}")
-    return fn(observation)
+    if not fn:
+        raise ValueError(f"Invalid task_id: {task_id}")
+    return fn(obs)
