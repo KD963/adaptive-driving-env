@@ -10,7 +10,7 @@ FINAL VERSION (Validator Safe)
 
 import random
 from models import AdaptiveDrivingAction, AdaptiveDrivingObservation
-from tasks import TASKS
+from adaptive_driving_env.tasks import TASKS
 
 VALID_TASKS = list(TASKS.keys())
 

@@ -1,15 +1,17 @@
 import math
 
 def clamp(score: float) -> float:
-    """Strictly enforces (0.0, 1.0) range with 3-decimal precision."""
     try:
         val = float(score)
         if not math.isfinite(val):
             return 0.01
-        # Stay strictly away from 0.0 and 1.0
-        return max(0.01, min(round(val, 3), 0.99))
-    except (ValueError, TypeError):
+        # Use a slightly higher floor to avoid rounding to 0.0
+        if val <= 0.01: return 0.01
+        if val >= 0.99: return 0.99
+        return round(val, 4)
+    except:
         return 0.01
+    
 
 def _get_val(obj, key, default=0.0):
     """Safe extraction for both dicts and objects."""
@@ -53,19 +55,27 @@ GRADERS = {
     "hard": grade_hard,
 }
 
-def grade(task_id: str, observation=None, **kwargs):
+def grade(task_id: str, *args, **kwargs):
     """
-    OpenEnv Entrypoint. 
-    Handles 'obs' passed as positional or 'observation' as keyword.
+    Ultra-robust entrypoint to ensure 'obs' is captured 
+    regardless of how the platform passes it.
     """
-    # Standardize the task_id
     tid = str(task_id).lower()
     fn = GRADERS.get(tid)
     
-    # Extract observation from various possible entry formats
-    obs = observation if observation is not None else kwargs.get('obs')
-    
-    if not fn or obs is None:
+    if not fn:
+        return 0.01
+
+    # Look for observation in positional args first, then keywords
+    obs = None
+    if len(args) > 0:
+        obs = args[0]
+    else:
+        obs = kwargs.get('observation') or kwargs.get('obs')
+
+    if obs is None:
+        # If we still don't have it, the grader can't work.
+        # But we return a valid float to avoid 'Out of Range' errors.
         return 0.01
 
     try:
