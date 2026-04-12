@@ -9,73 +9,20 @@ tasks:
   - id: easy
     name: Easy Drive
     grader:
-      type: llm
-      prompt: |
-        You are scoring a driving agent.
-
-        Inputs:
-        position = {{position}}
-        goal = {{goal}}
-
-        Compute:
-        - If goal <= 0 → score = 0.02
-        - If position >= goal → score = 0.95
-        - Otherwise → score = 0.05 + 0.9 * (position / goal)
-
-        Clamp the score between 0.02 and 0.98.
-
-        Output ONLY the final numeric score (no explanation).
+      type: python
+      entrypoint: grader:grade
     score_range: [0.02, 0.98]
 
   - id: medium
     name: Medium Drive
     grader:
-      type: llm
-      prompt: |
-        You are scoring a driving agent.
-
-        Inputs:
-        position = {{position}}
-        goal = {{goal}}
-        speed = {{speed}}
-        visibility = {{visibility}}
-
-        Compute:
-        - progress = position / goal (if goal > 0, else 0)
-        - penalty = 0
-        - Add 0.2 penalty if visibility < 0.6
-        - Add 0.2 penalty if speed > 10
-        - score = progress - penalty
-
-        If position >= goal:
-        - score = 0.9 - penalty
-
-        Clamp the score between 0.02 and 0.98.
-
-        Output ONLY the final numeric score (no explanation).
+      type: python
+      entrypoint: grader:grade
     score_range: [0.02, 0.98]
 
   - id: hard
     name: Hard Drive
     grader:
-      type: llm
-      prompt: |
-        You are scoring a driving agent.
-
-        Inputs:
-        position = {{position}}
-        goal = {{goal}}
-        battery = {{battery}}
-
-        Compute:
-        - progress = position / goal (if goal > 0, else 0)
-        - battery_factor = battery / 100
-        - score = 0.7 * progress + 0.3 * battery_factor
-
-        If position >= goal AND battery > 0:
-        - score = 0.9
-
-        Clamp the score between 0.02 and 0.98.
-
-        Output ONLY the final numeric score (no explanation).
+      type: python
+      entrypoint: grader:grade
     score_range: [0.02, 0.98]

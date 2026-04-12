@@ -1,4 +1,6 @@
 def clamp(score: float) -> float:
+    # Forces score to be strictly between 0 and 1
+    # Using 0.02 and 0.98 to avoid any floating point rounding issues with 0 or 1
     return max(0.02, min(round(float(score), 4), 0.98))
 
 
@@ -7,8 +9,6 @@ def _get(obs, key, default=0.0):
         return obs.get(key, default)
     return getattr(obs, key, default)
 
-
-# ─────────────────────────────────────────────
 
 def grade_easy(observation):
     position = float(_get(observation, "position", 0.0))
@@ -63,8 +63,6 @@ def grade_hard(observation):
     return clamp(score)
 
 
-# ─────────────────────────────────────────────
-
 GRADERS = {
     "easy": grade_easy,
     "medium": grade_medium,
@@ -73,29 +71,17 @@ GRADERS = {
 
 
 def grade(task_id: str, obs):
+    """
+    Main entrypoint for OpenEnv. 
+    Guarantees a return value between 0.02 and 0.98.
+    """
     fn = GRADERS.get(task_id)
     if not fn:
-        return 0.02  # safe fallback
+        return 0.02 
 
     try:
         score = fn(obs)
+        # Final safety check before returning to platform
+        return clamp(score)
     except Exception:
-        return 0.02  # if grader crashes
-
-    # Normalize
-    try:
-        score = float(score)
-    except (TypeError, ValueError):
         return 0.02
-
-    # NaN check
-    if score != score:
-        return 0.02
-
-    # Strict bounds (OpenEnv requirement)
-    if score <= 0.0:
-        return 0.02
-    if score >= 1.0:
-        return 0.98
-
-    return round(score, 4)
