@@ -8,15 +8,73 @@ port: 7860
 tasks:
   - id: easy
     name: Easy Drive
-    grader: grader:grade_easy
+    grader:
+      type: llm
+      prompt: |
+        You are evaluating an autonomous driving agent.
+
+        Inputs:
+        - position: {{position}}
+        - goal: {{goal}}
+
+        Scoring:
+        - If position >= goal → return 0.95
+        - Else compute progress = position / goal
+        - Score = 0.05 + 0.9 * progress
+
+        Return ONLY a float between 0.02 and 0.98.
+
     score_range: [0.01, 0.99]
 
   - id: medium
     name: Medium Drive
-    grader: grader:grade_medium
+    grader:
+      type: llm
+      prompt: |
+        Evaluate driving performance.
+
+        Inputs:
+        - position: {{position}}
+        - goal: {{goal}}
+        - speed: {{speed}}
+        - visibility: {{visibility}}
+
+        Rules:
+        - progress = position / goal
+        - penalty:
+            +0.2 if visibility < 0.6
+            +0.2 if speed > 10
+        - raw = progress - penalty
+        - score = 0.05 + 0.9 * max(0.01, raw)
+
+        - If position >= goal:
+            score = 0.9 - penalty
+
+        Return ONLY a float between 0.02 and 0.98.
+
     score_range: [0.01, 0.99]
 
   - id: hard
     name: Hard Drive
-    grader: grader:grade_hard
+    grader:
+      type: llm
+      prompt: |
+        Evaluate driving efficiency.
+
+        Inputs:
+        - position: {{position}}
+        - goal: {{goal}}
+        - battery: {{battery}}
+
+        Rules:
+        - progress = position / goal
+        - battery_factor = battery / 100
+        - combined = 0.7 * progress + 0.3 * battery_factor
+        - score = 0.05 + 0.9 * combined
+
+        - If position >= goal AND battery > 0:
+            score = 0.9 + 0.05 * battery_factor
+
+        Return ONLY a float between 0.02 and 0.98.
+
     score_range: [0.01, 0.99]
