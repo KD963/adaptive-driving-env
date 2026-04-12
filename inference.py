@@ -52,10 +52,6 @@ def get_action(position, goal, speed, battery):
 # ─────────────────────────────────────────────
 
 def log_safe(val: float) -> float:
-    """
-    Ensures values NEVER become 0 or 1,
-    and avoids rounding into boundaries.
-    """
     try:
         f_val = float(val)
 
@@ -105,14 +101,12 @@ def main():
                     action = AdaptiveDrivingAction(move=action_str)
                     obs = env.step(action)
 
-                    # ✅ SAFE REWARD
                     current_reward = log_safe(obs.reward)
                     done = bool(obs.done)
 
                     rewards.append(current_reward)
                     steps += 1
 
-                    # 🔥 IMPORTANT: 4 DECIMALS (NOT 2)
                     print(
                         f"[STEP] step={steps} "
                         f"action={action_str} "
@@ -141,16 +135,18 @@ def main():
             print(f"Environment Error: {str(e)}")
 
         finally:
-            # 🔥 IMPORTANT: 4 DECIMALS + SAFE DEFAULT
-            reward_str = (
-                ",".join(f"{log_safe(r):.4f}" for r in rewards)
-                if rewards else "0.021"
+            # ✅ FINAL SCORE FIX (MANDATORY)
+            final_score = (
+                sum(rewards) / len(rewards)
+                if rewards else 0.021
             )
 
+            final_score = log_safe(final_score)
+
             print(
-                f"[END] success={str(success).lower()} "
-                f"steps={steps} "
-                f"rewards={reward_str}"
+                f"[END] task={task_id} "
+                f"score={final_score:.4f} "
+                f"steps={steps}"
             )
 
 

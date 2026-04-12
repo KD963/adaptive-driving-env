@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models import AdaptiveDrivingAction, AdaptiveDrivingObservation
 from server.adaptive_driving_env_environment import AdaptiveDrivingEnvironment
 
-app = FastAPI(title="Adaptive Driving Environment", version="1.0.2")
+app = FastAPI(title="Adaptive Driving Environment", version="1.0.3")
 
 # One env per task
 _envs: Dict[str, AdaptiveDrivingEnvironment] = {}
@@ -46,6 +46,28 @@ class StepResponse(BaseModel):
 
 
 # ─────────────────────────────────────────────
+# SAFE REWARD CLAMP (API LAYER SAFETY)
+# ─────────────────────────────────────────────
+
+def _safe_api_reward(val: float) -> float:
+    try:
+        r = float(val)
+
+        if not math.isfinite(r):
+            return 0.021
+
+        if r <= 0.02:
+            return 0.021
+        if r >= 0.98:
+            return 0.979
+
+        return round(r, 4)
+
+    except:
+        return 0.021
+
+
+# ─────────────────────────────────────────────
 # HEALTH
 # ─────────────────────────────────────────────
 
@@ -69,13 +91,18 @@ def reset(req: ResetRequest = ResetRequest()):
 
     try:
         obs = env.reset(task_id)
+
+        # 🔥 EXTRA SAFETY: ensure reset reward is safe
+        obs.reward = _safe_api_reward(obs.reward)
+
         return obs
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 # ─────────────────────────────────────────────
-# STEP (🔥 CRITICAL FIX HERE)
+# STEP
 # ─────────────────────────────────────────────
 
 @app.post("/step", response_model=StepResponse)
@@ -87,26 +114,16 @@ def step(req: StepRequest):
     try:
         obs = env.step(req.action)
 
-        # 🔥 HARD VALIDATOR-SAFE CLAMP
-        safe_reward = float(obs.reward)
-
-        if not math.isfinite(safe_reward):
-            safe_reward = 0.021
-
-        # Never allow boundaries
-        if safe_reward <= 0.02:
-            safe_reward = 0.021
-        elif safe_reward >= 0.98:
-            safe_reward = 0.979
-
-        # Final clamp
-        safe_reward = max(0.021, min(round(safe_reward, 4), 0.979))
+        safe_reward = _safe_api_reward(obs.reward)
 
         return StepResponse(
             observation=obs,
             done=obs.done,
             reward=safe_reward,
-            info={"task": _active_task, "step": obs.metadata.get("step", 0)},
+            info={
+                "task": _active_task,
+                "step": obs.metadata.get("step", 0)
+            },
         )
 
     except Exception as e:
