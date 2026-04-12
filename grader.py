@@ -3,13 +3,13 @@ import math
 def clamp(score: float) -> float:
     try:
         val = float(score)
-        if not math.isfinite(val):
+        if not math.isfinite(val): 
             return 0.01
-        # Use a slightly higher floor to avoid rounding to 0.0
-        if val <= 0.01: return 0.01
-        if val >= 0.99: return 0.99
-        return round(val, 4)
-    except:
+        
+        # This is the "Magic Fix": 
+        # It maps everything to a range between 0.01 and 0.99
+        return max(0.01, min(round(val, 4), 0.99))
+    except (ValueError, TypeError):
         return 0.01
     
 
