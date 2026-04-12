@@ -53,7 +53,7 @@ def grade_easy(obs):
         return clamp(score)
 
     except Exception:
-        return 0.05
+        return clamp(0.05)
 
 
 # ─────────────────────────────────────────────
@@ -83,7 +83,7 @@ def grade_medium(obs):
         return clamp(score)
 
     except Exception:
-        return 0.05
+        return clamp(0.05)
 
 
 # ─────────────────────────────────────────────
@@ -107,7 +107,7 @@ def grade_hard(obs):
         return clamp(score)
 
     except Exception:
-        return 0.05
+        return clamp(0.05)
 
 
 # ─────────────────────────────────────────────
@@ -134,7 +134,7 @@ def grade(task_id: str, *args, **kwargs):
         fn = GRADERS.get(str(task_id).lower())
 
         if not fn:
-            return 0.021
+            return clamp(0.05)
 
         # Extract observation safely
         obs = args[0] if args else (
@@ -142,10 +142,10 @@ def grade(task_id: str, *args, **kwargs):
         )
 
         if obs is None:
-            return 0.021
+            return clamp(0.05)
 
         raw_score = fn(obs)
         return clamp(raw_score)
 
     except Exception:
-        return 0.05
+        return clamp(0.05)
