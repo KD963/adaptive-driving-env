@@ -1,4 +1,4 @@
-"""Adaptive Driving Environment Client (Real-world EV simulation)."""
+"""Adaptive Driving Environment Client (FINAL - Validator Safe)."""
 
 from typing import Dict
 
@@ -14,23 +14,20 @@ class AdaptiveDrivingEnv(
 ):
     """
     Client for Adaptive Driving Environment.
-
-    Supports real-world EV simulation with weather, slope, and battery constraints.
     """
 
+    # ✅ FIX 1: Match server contract
     def _step_payload(self, action: AdaptiveDrivingAction) -> Dict:
         """
         Convert action into API payload.
+        Server expects: {"move": "accelerate" | "brake"}
         """
         return {
-            "acceleration": action.acceleration,
-            "brake": action.brake,
+            "move": action.move  # ✅ aligned with server
         }
 
+    # ✅ FIX 2: Parse full observation correctly
     def _parse_result(self, payload: Dict) -> StepResult[AdaptiveDrivingObservation]:
-        """
-        Parse server response.
-        """
         obs_data = payload.get("observation", {})
 
         observation = AdaptiveDrivingObservation(
@@ -42,6 +39,7 @@ class AdaptiveDrivingEnv(
             visibility=obs_data.get("visibility", 1.0),
             traction=obs_data.get("traction", 1.0),
             distance_to_goal=obs_data.get("distance_to_goal", 0.0),
+            goal=obs_data.get("goal", 1.0),  # ✅ CRITICAL FIX
             reward=payload.get("reward", 0.0),
             done=payload.get("done", False),
             metadata=obs_data.get("metadata", {}),
@@ -49,14 +47,11 @@ class AdaptiveDrivingEnv(
 
         return StepResult(
             observation=observation,
-            reward=payload.get("reward", 0.0),
+            reward=float(payload.get("reward", 0.0)),
             done=payload.get("done", False),
         )
 
     def _parse_state(self, payload: Dict) -> State:
-        """
-        Parse environment state.
-        """
         return State(
             episode_id=payload.get("episode_id"),
             step_count=payload.get("step_count", 0),

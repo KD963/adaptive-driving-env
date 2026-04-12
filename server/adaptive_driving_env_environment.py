@@ -1,11 +1,11 @@
 """
 AdaptiveDrivingEnvironment
 
-FINAL VERSION (Hackathon Ready)
+FINAL VERSION (Validator Safe)
 
-- No Python grader usage
-- Environment only simulates state
-- Reward is neutral constant (validator uses LLM grader)
+- No Python grader logic
+- Reward is progress-based (non-constant)
+- Always strictly between (0, 1)
 """
 
 import random
@@ -33,7 +33,6 @@ class AdaptiveDrivingEnvironment:
     # ─────────────────────────────────────────────
 
     def reset(self, task_id: str = None) -> AdaptiveDrivingObservation:
-        # Ensure deterministic task selection
         if task_id in VALID_TASKS:
             self._task_id = task_id
         else:
@@ -52,13 +51,13 @@ class AdaptiveDrivingEnvironment:
         self._step       = 0
         self._done       = False
 
-        return self._make_obs(0.05)  # neutral reward
+        return self._make_obs()
 
     # ─────────────────────────────────────────────
 
     def step(self, action: AdaptiveDrivingAction) -> AdaptiveDrivingObservation:
         if self._done:
-            return self._make_obs(0.05)
+            return self._make_obs()
 
         self._step += 1
         move = action.move.lower().strip()
@@ -72,6 +71,7 @@ class AdaptiveDrivingEnvironment:
             self._speed   = max(0.0, self._speed - 3.0)
             self._battery = max(0.0, self._battery - 0.5)
 
+        # Update position
         self._position = min(self._position + self._speed, self._goal)
 
         reached        = self._position >= self._goal
@@ -80,7 +80,7 @@ class AdaptiveDrivingEnvironment:
 
         self._done = reached or out_of_battery or timed_out
 
-        return self._make_obs(0.05)  # neutral reward
+        return self._make_obs()
 
     # ─────────────────────────────────────────────
 
@@ -103,9 +103,19 @@ class AdaptiveDrivingEnvironment:
     def _compute_traction(self) -> float:
         return {"clear": 1.0, "rain": 0.6, "heat": 0.9}.get(self._weather, 1.0)
 
-    def _make_obs(self, reward: float) -> AdaptiveDrivingObservation:
-        safe_reward = max(0.02, min(round(float(reward), 4), 0.98))
+    # ✅ KEY FIX: dynamic reward
+    def _compute_reward(self) -> float:
+        progress = self._position / max(self._goal, 1.0)
 
+        # small penalty if wasting battery
+        efficiency = self._battery / 100.0
+
+        reward = 0.7 * progress + 0.3 * efficiency
+
+        # clamp strictly between (0,1)
+        return max(0.02, min(round(reward, 4), 0.98))
+
+    def _make_obs(self) -> AdaptiveDrivingObservation:
         return AdaptiveDrivingObservation(
             position         = float(round(self._position, 4)),
             speed            = float(round(self._speed, 4)),
@@ -115,8 +125,8 @@ class AdaptiveDrivingEnvironment:
             visibility       = float(self._visibility),
             traction         = float(self._traction),
             distance_to_goal = float(round(max(0.0, self._goal - self._position), 4)),
-            goal             = float(self._goal if self._goal > 0 else 1.0),  # critical fix
-            reward           = safe_reward,
+            goal             = float(self._goal if self._goal > 0 else 1.0),
+            reward           = self._compute_reward(),  # ✅ dynamic reward
             done             = bool(self._done),
             metadata         = {"task": self._task_id, "step": self._step},
         )

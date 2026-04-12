@@ -1,10 +1,5 @@
 """
-FastAPI server for Adaptive Driving Environment.
-
-The validator calls:
-    POST /reset  {"task": "easy"}   → must reset to that exact task
-    POST /step   {"action": {...}}  → must return reward strictly in (0, 1)
-    GET  /health                   → must return 200
+FastAPI server for Adaptive Driving Environment (FINAL - Validator Safe)
 """
 
 from fastapi import FastAPI, HTTPException
@@ -18,17 +13,20 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models import AdaptiveDrivingAction, AdaptiveDrivingObservation
 from server.adaptive_driving_env_environment import AdaptiveDrivingEnvironment
 
-app = FastAPI(title="Adaptive Driving Environment", version="1.0.0")
+app = FastAPI(title="Adaptive Driving Environment", version="1.0.1")
 
-# One env instance per task
+# One env per task
 _envs: Dict[str, AdaptiveDrivingEnvironment] = {}
-_last_task: str = "easy"   # tracks which task was last reset
 
 
 def get_env(task_id: str) -> AdaptiveDrivingEnvironment:
     if task_id not in _envs:
         _envs[task_id] = AdaptiveDrivingEnvironment()
     return _envs[task_id]
+
+
+# ✅ Track active task safely
+_active_task: str = "easy"
 
 
 class ResetRequest(BaseModel):
@@ -43,7 +41,7 @@ class StepResponse(BaseModel):
     observation: AdaptiveDrivingObservation
     done: bool
     reward: float
-    info: Dict[str, Any] = {}
+    info: Dict[str, Any]
 
 
 @app.get("/health")
@@ -53,12 +51,15 @@ def health():
 
 @app.post("/reset", response_model=AdaptiveDrivingObservation)
 def reset(req: ResetRequest = ResetRequest()):
-    global _last_task
+    global _active_task
+
     task_id = req.task if req.task in ("easy", "medium", "hard") else "easy"
-    _last_task = task_id
+    _active_task = task_id
+
     env = get_env(task_id)
+
     try:
-        obs = env.reset(task_id)   # always pass task explicitly
+        obs = env.reset(task_id)   # MUST pass task_id explicitly
         return obs
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -66,11 +67,20 @@ def reset(req: ResetRequest = ResetRequest()):
 
 @app.post("/step", response_model=StepResponse)
 def step(req: StepRequest):
-    global _last_task
-    env = get_env(_last_task)
+    global _active_task
+
+    env = get_env(_active_task)
+
     try:
         obs = env.step(req.action)
-        return StepResponse(observation=obs, done=obs.done, reward=obs.reward)
+
+        return StepResponse(
+            observation=obs,
+            done=obs.done,
+            reward=float(obs.reward),  # ✅ force float consistency
+            info={"task": _active_task, "step": obs.metadata.get("step", 0)},
+        )
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -92,8 +102,8 @@ def schema():
 def list_tasks():
     return [
         {"id": "easy",   "name": "Easy Drive",   "difficulty": "easy"},
-        {"id": "medium", "name": "Medium Drive",  "difficulty": "medium"},
-        {"id": "hard",   "name": "Hard Drive",    "difficulty": "hard"},
+        {"id": "medium", "name": "Medium Drive", "difficulty": "medium"},
+        {"id": "hard",   "name": "Hard Drive",   "difficulty": "hard"},
     ]
 
 

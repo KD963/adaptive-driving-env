@@ -7,14 +7,14 @@ TASKS = {
     },
     "medium": {
         "weather": "rain",
-        "slope": 2,
+        "slope": 3,
         "battery": 80,
-        "goal": 70,
+        "goal": 75,
     },
     "hard": {
-        "weather": "heat",
-        "slope": 4,
-        "battery": 60,
-        "goal": 100,
+        "weather": "rain",
+        "slope": 6,
+        "battery": 55,
+        "goal": 110,
     },
 }
