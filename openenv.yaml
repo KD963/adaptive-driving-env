@@ -11,18 +11,18 @@ tasks:
     grader:
       type: python
       entrypoint: grader:grade
-    score_range: [0.02, 0.98]
+    score_range: [0.01, 0.99]
 
   - id: medium
     name: Medium Drive
     grader:
       type: python
       entrypoint: grader:grade
-    score_range: [0.02, 0.98]
+    score_range: [0.01, 0.99]
 
   - id: hard
     name: Hard Drive
     grader:
       type: python
       entrypoint: grader:grade
-    score_range: [0.02, 0.98]
+    score_range: [0.01, 0.99]

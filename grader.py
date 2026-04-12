@@ -1,67 +1,51 @@
+import math
+
 def clamp(score: float) -> float:
-    # Forces score to be strictly between 0 and 1
-    # Using 0.02 and 0.98 to avoid any floating point rounding issues with 0 or 1
-    return max(0.02, min(round(float(score), 4), 0.98))
+    """Strictly enforces (0.0, 1.0) range with 3-decimal precision."""
+    try:
+        val = float(score)
+        if not math.isfinite(val):
+            return 0.01
+        # Stay strictly away from 0.0 and 1.0
+        return max(0.01, min(round(val, 3), 0.99))
+    except (ValueError, TypeError):
+        return 0.01
 
+def _get_val(obj, key, default=0.0):
+    """Safe extraction for both dicts and objects."""
+    if isinstance(obj, dict):
+        return obj.get(key, default)
+    return getattr(obj, key, default)
 
-def _get(obs, key, default=0.0):
-    if isinstance(obs, dict):
-        return obs.get(key, default)
-    return getattr(obs, key, default)
+def grade_easy(obs):
+    pos = float(_get_val(obs, "position", 0.0))
+    goal = float(_get_val(obs, "goal", 50.0))
+    progress = max(0.0, min(pos / goal, 1.0)) if goal > 0 else 0.0
+    return 0.05 + (0.9 * progress)
 
-
-def grade_easy(observation):
-    position = float(_get(observation, "position", 0.0))
-    goal     = float(_get(observation, "goal", 50.0))
-
-    progress = position / goal if goal > 0 else 0.0
-    score = 0.05 + 0.9 * progress
-
-    if position >= goal:
-        score = 0.95
-
-    return clamp(score)
-
-
-def grade_medium(observation):
-    position   = float(_get(observation, "position", 0.0))
-    speed      = float(_get(observation, "speed", 0.0))
-    visibility = float(_get(observation, "visibility", 1.0))
-    goal       = float(_get(observation, "goal", 70.0))
-
-    progress = position / goal if goal > 0 else 0.0
-
+def grade_medium(obs):
+    pos = float(_get_val(obs, "position", 0.0))
+    goal = float(_get_val(obs, "goal", 70.0))
+    vis = float(_get_val(obs, "visibility", 1.0))
+    spd = float(_get_val(obs, "speed", 0.0))
+    
+    progress = max(0.0, min(pos / goal, 1.0)) if goal > 0 else 0.0
     penalty = 0.0
-    if visibility < 0.6:
-        penalty += 0.2
-    if speed > 10:
-        penalty += 0.2
+    if vis < 0.6: penalty += 0.15
+    if spd > 10:  penalty += 0.15
+    
+    return max(0.05, (0.05 + 0.9 * progress) - penalty)
 
-    raw = progress - penalty
-    score = 0.05 + 0.9 * max(0.01, raw)
-
-    if position >= goal:
-        score = 0.9 - penalty
-
-    return clamp(score)
-
-
-def grade_hard(observation):
-    position = float(_get(observation, "position", 0.0))
-    battery  = float(_get(observation, "battery", 0.0))
-    goal     = float(_get(observation, "goal", 100.0))
-
-    progress = position / goal if goal > 0 else 0.0
-    battery_factor = max(0.0, min(battery / 100.0, 1.0))
-
-    combined = 0.7 * progress + 0.3 * battery_factor
-    score = 0.05 + 0.9 * combined
-
-    if position >= goal and battery > 0:
-        score = 0.9 + 0.05 * battery_factor
-
-    return clamp(score)
-
+def grade_hard(obs):
+    pos = float(_get_val(obs, "position", 0.0))
+    goal = float(_get_val(obs, "goal", 100.0))
+    bat = float(_get_val(obs, "battery", 0.0))
+    
+    progress = max(0.0, min(pos / goal, 1.0)) if goal > 0 else 0.0
+    bat_factor = max(0.0, min(bat / 100.0, 1.0))
+    
+    # 70% progress, 30% battery efficiency
+    return 0.05 + (0.65 * progress) + (0.25 * bat_factor)
 
 GRADERS = {
     "easy": grade_easy,
@@ -69,19 +53,23 @@ GRADERS = {
     "hard": grade_hard,
 }
 
-
-def grade(task_id: str, obs):
+def grade(task_id: str, observation=None, **kwargs):
     """
-    Main entrypoint for OpenEnv. 
-    Guarantees a return value between 0.02 and 0.98.
+    OpenEnv Entrypoint. 
+    Handles 'obs' passed as positional or 'observation' as keyword.
     """
-    fn = GRADERS.get(task_id)
-    if not fn:
-        return 0.02 
+    # Standardize the task_id
+    tid = str(task_id).lower()
+    fn = GRADERS.get(tid)
+    
+    # Extract observation from various possible entry formats
+    obs = observation if observation is not None else kwargs.get('obs')
+    
+    if not fn or obs is None:
+        return 0.01
 
     try:
-        score = fn(obs)
-        # Final safety check before returning to platform
-        return clamp(score)
+        raw_score = fn(obs)
+        return clamp(raw_score)
     except Exception:
         return 0.02
